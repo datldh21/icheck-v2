@@ -25,6 +25,7 @@ import { Avatar, Badge, Modal } from '../components/common';
 import { REQUEST_TYPE_LABELS } from '../types';
 import { formatDate, formatMonthYear } from '../utils';
 import { aiAnalysisService, type MonthlyAnalysis, type AnalysisInsight } from '../services/aiAnalysisService';
+import { WarningTable } from '../components/attendance';
 
 // Mock analytics data
 const punctualityData = [
@@ -104,51 +105,58 @@ export function ManagerPage() {
         <SummaryCard icon={<Home />} label="Work from home" value={String(wfhCount)} color="bg-purple-500" />
       </div>
 
-      {/* Pending Approvals */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="p-5 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800">
-            Đề xuất chờ duyệt ({pendingRequests.length})
-          </h3>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {pendingRequests.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 text-sm">
-              Không có đề xuất nào chờ duyệt
-            </div>
-          ) : (
-            pendingRequests.map((req) => (
-              <div key={req.id} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Avatar name={req.userName} size="md" />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{req.userName}</p>
-                    <p className="text-xs text-gray-500">
-                      {REQUEST_TYPE_LABELS[req.type]} &middot; {formatDate(req.startDate)}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">Lý do: {req.reason}</p>
+      {/* Pending Approvals + Warning Table */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Pending Approvals */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="p-5 border-b border-gray-100">
+            <h3 className="text-lg font-bold text-gray-800">
+              Đề xuất chờ duyệt ({pendingRequests.length})
+            </h3>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {pendingRequests.length === 0 ? (
+              <div className="p-8 text-center text-gray-400 text-sm">
+                Không có đề xuất nào chờ duyệt
+              </div>
+            ) : (
+              pendingRequests.map((req) => (
+                <div key={req.id} className="px-4 sm:px-5 py-4 hover:bg-gray-50/50 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <Avatar name={req.userName} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800">{req.userName}</p>
+                      <p className="text-xs text-gray-500">
+                        {REQUEST_TYPE_LABELS[req.type]} &middot; {formatDate(req.startDate)}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">Lý do: {req.reason}</p>
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          onClick={() => handleApprove(req.id)}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-600 rounded-lg text-xs font-semibold hover:bg-green-100 transition-colors"
+                        >
+                          <CheckCircle2 size={14} />
+                          Duyệt
+                        </button>
+                        <button
+                          onClick={() => openRejectModal(req.id, req.userName)}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors"
+                        >
+                          <XCircle size={14} />
+                          Từ chối
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleApprove(req.id)}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-600 rounded-lg text-xs font-semibold hover:bg-green-100 transition-colors"
-                  >
-                    <CheckCircle2 size={14} />
-                    Duyệt
-                  </button>
-                  <button
-                    onClick={() => openRejectModal(req.id, req.userName)}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors"
-                  >
-                    <XCircle size={14} />
-                    Từ chối
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
+
+        {/* Warning Table */}
+        <WarningTable />
       </div>
 
       {/* ===== AI Monthly Analysis ===== */}
@@ -197,17 +205,17 @@ export function ManagerPage() {
         </div>
         <div className="divide-y divide-gray-50">
           {abnormalPatterns.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between px-5 py-4">
-              <div className="flex items-center gap-3">
+            <div key={idx} className="px-4 sm:px-5 py-4">
+              <div className="flex items-start gap-3">
                 <Avatar name={item.name} size="md" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">{item.name}</p>
-                  <p className="text-xs text-gray-400">{item.email}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="text-sm font-semibold text-gray-800">{item.name}</p>
+                    <Badge variant="default">{item.type}</Badge>
+                  </div>
+                  <p className="text-xs text-gray-400 truncate">{item.email}</p>
+                  <p className="text-xs text-red-500 font-semibold mt-1">{item.count} lần trong tháng</p>
                 </div>
-              </div>
-              <div className="text-right">
-                <Badge variant="default">{item.type}</Badge>
-                <p className="text-xs text-red-500 font-semibold mt-1">{item.count} lần trong tháng</p>
               </div>
             </div>
           ))}
@@ -449,7 +457,7 @@ function AIAnalysisSection() {
       {hasLoaded && !isLoading && !isGenerating && analysis && (
         <div>
           {/* Score + Summary */}
-          <div className="p-5 border-b border-gray-50 flex gap-6 items-start">
+          <div className="p-4 sm:p-5 border-b border-gray-50 flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start">
             {/* Score Ring */}
             {analysis.overallScore > 0 && (
               <div className="shrink-0 flex flex-col items-center">
@@ -500,9 +508,9 @@ function AIAnalysisSection() {
                 {analysis.insights.map((insight) => (
                   <div
                     key={insight.id}
-                    className={`border-l-4 rounded-lg p-4 ${getInsightBorder(insight.type)}`}
+                    className={`border-l-4 rounded-lg p-3 sm:p-4 ${getInsightBorder(insight.type)}`}
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           {getInsightIcon(insight.type)}
@@ -514,7 +522,7 @@ function AIAnalysisSection() {
                         <p className="text-xs text-gray-600 leading-relaxed">{insight.detail}</p>
                       </div>
                       {insight.metric && (
-                        <div className="text-right shrink-0">
+                        <div className="sm:text-right shrink-0 flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0">
                           <p className="text-lg font-bold text-gray-800">{insight.metric}</p>
                           <p className="text-[10px] text-gray-400">{insight.metricLabel}</p>
                         </div>
@@ -534,13 +542,13 @@ function AIAnalysisSection() {
 // Summary Card Component
 function SummaryCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
-      <div className={`w-12 h-12 ${color} rounded-xl flex items-center justify-center text-white shrink-0`}>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
+      <div className={`w-10 h-10 sm:w-12 sm:h-12 ${color} rounded-xl flex items-center justify-center text-white shrink-0`}>
         {icon}
       </div>
       <div>
-        <p className="text-2xl font-bold text-gray-800">{value}</p>
-        <p className="text-xs text-gray-400 font-medium">{label}</p>
+        <p className="text-xl sm:text-2xl font-bold text-gray-800">{value}</p>
+        <p className="text-[11px] sm:text-xs text-gray-400 font-medium">{label}</p>
       </div>
     </div>
   );

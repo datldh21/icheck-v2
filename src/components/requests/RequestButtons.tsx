@@ -20,14 +20,14 @@ export function RequestButtons() {
 
   return (
     <>
-      <div className="flex flex-wrap gap-3 justify-center mt-5">
+      <div className="flex flex-wrap gap-2 sm:gap-3 justify-center mt-5">
         {buttons.map((btn) => (
           <button
             key={btn.type}
             onClick={() => setOpenModal(btn.type)}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white border-2 border-primary text-primary rounded-full text-sm font-semibold hover:bg-primary hover:text-white transition-all"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 bg-white border-2 border-primary text-primary rounded-full text-xs sm:text-sm font-semibold hover:bg-primary hover:text-white transition-all"
           >
-            <Plus size={16} />
+            <Plus size={14} className="sm:w-4 sm:h-4" />
             {btn.label}
           </button>
         ))}

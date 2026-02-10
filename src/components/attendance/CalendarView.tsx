@@ -9,15 +9,15 @@ const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function getStatusIndicator(status: DayStatus) {
   switch (status) {
     case 'on-time':
-      return <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2 2 4-4" fill="none" stroke="white" strokeWidth="1.5"/></svg></div>;
+      return <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-green-500 flex items-center justify-center"><svg className="w-2 h-2 sm:w-2.5 sm:h-2.5" viewBox="0 0 10 10"><path d="M2 5l2 2 4-4" fill="none" stroke="white" strokeWidth="1.5"/></svg></div>;
     case 'late':
-      return <div className="w-4 h-4 rounded-full bg-orange-400 flex items-center justify-center"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2 2 4-4" fill="none" stroke="white" strokeWidth="1.5"/></svg></div>;
+      return <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-orange-400 flex items-center justify-center"><svg className="w-2 h-2 sm:w-2.5 sm:h-2.5" viewBox="0 0 10 10"><path d="M2 5l2 2 4-4" fill="none" stroke="white" strokeWidth="1.5"/></svg></div>;
     case 'leave':
-      return <div className="w-4 h-4 rounded-full bg-blue-400" />;
+      return <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-blue-400" />;
     case 'absent':
-      return <div className="w-4 h-4 rounded-full bg-red-400" />;
+      return <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-red-400" />;
     case 'wfh':
-      return <div className="w-4 h-4 rounded-full bg-purple-400" />;
+      return <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-purple-400" />;
     default:
       return null;
   }
@@ -54,7 +54,7 @@ export function CalendarView() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+    <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm border border-gray-100">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-gray-800">
@@ -83,7 +83,7 @@ export function CalendarView() {
       <div className="grid grid-cols-7 gap-1">
         {cells.map((day, idx) => {
           if (day === null) {
-            return <div key={`empty-${idx}`} className="h-14" />;
+            return <div key={`empty-${idx}`} className="h-10 sm:h-14" />;
           }
 
           const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -94,11 +94,11 @@ export function CalendarView() {
           return (
             <div
               key={dateStr}
-              className={`h-14 flex flex-col items-center justify-center rounded-lg transition-colors ${
+              className={`h-10 sm:h-14 flex flex-col items-center justify-center rounded-lg transition-colors ${
                 isToday ? 'bg-primary text-white' : isWeekend ? 'text-gray-300' : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <span className={`text-sm font-medium ${isToday ? 'font-bold' : ''}`}>
+              <span className={`text-xs sm:text-sm font-medium ${isToday ? 'font-bold' : ''}`}>
                 {day}
               </span>
               {dayData && !isToday && !isWeekend && (

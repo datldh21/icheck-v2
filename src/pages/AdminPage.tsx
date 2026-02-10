@@ -23,20 +23,22 @@ export function AdminPage() {
       <h1 className="text-2xl font-bold text-gray-800">Cài đặt hệ thống</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === tab.key
-                ? 'bg-white text-gray-800 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit min-w-fit">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
+                activeTab === tab.key
+                  ? 'bg-white text-gray-800 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Tab content */}
@@ -154,14 +156,14 @@ function HolidaysTab() {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-      <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+      <div className="p-4 sm:p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-bold text-gray-800">Lịch ngày lễ</h3>
           <p className="text-xs text-gray-400 mt-1">Quản lý ngày lễ và nghỉ của công ty</p>
         </div>
         <button
           onClick={() => setShowAdd(!showAdd)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors"
+          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors w-full sm:w-auto"
         >
           <Plus size={16} />
           Thêm ngày lễ
@@ -170,43 +172,47 @@ function HolidaysTab() {
 
       {/* Add form */}
       {showAdd && (
-        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex gap-3 items-end">
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-500 mb-1">Ngày</label>
-            <input
-              type="date"
-              value={addForm.date}
-              onChange={(e) => setAddForm({ ...addForm, date: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-500 mb-1">Tên ngày lễ</label>
-            <input
-              type="text"
-              value={addForm.name}
-              onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
-              placeholder="VD: Tết Nguyên đán"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-1.5 text-sm">
+        <div className="px-4 sm:px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Ngày</label>
               <input
-                type="checkbox"
-                checked={addForm.isPaid}
-                onChange={(e) => setAddForm({ ...addForm, isPaid: e.target.checked })}
-                className="rounded"
+                type="date"
+                value={addForm.date}
+                onChange={(e) => setAddForm({ ...addForm, date: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
               />
-              Có lương
-            </label>
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Tên ngày lễ</label>
+              <input
+                type="text"
+                value={addForm.name}
+                onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                placeholder="VD: Tết Nguyên đán"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+            </div>
+            <div className="flex items-center justify-between sm:justify-start gap-3">
+              <label className="flex items-center gap-1.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={addForm.isPaid}
+                  onChange={(e) => setAddForm({ ...addForm, isPaid: e.target.checked })}
+                  className="rounded"
+                />
+                Có lương
+              </label>
+              <div className="flex gap-2">
+                <button onClick={handleAdd} className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                  <Save size={16} />
+                </button>
+                <button onClick={() => setShowAdd(false)} className="p-2 bg-gray-300 text-gray-600 rounded-lg hover:bg-gray-400">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
           </div>
-          <button onClick={handleAdd} className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
-            <Save size={16} />
-          </button>
-          <button onClick={() => setShowAdd(false)} className="p-2 bg-gray-300 text-gray-600 rounded-lg hover:bg-gray-400">
-            <X size={16} />
-          </button>
         </div>
       )}
 

@@ -5,7 +5,7 @@ export function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Top section: Clock + Greeting */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
         <RealTimeClock />
         <CheckinBanner />
         <RequestButtons />

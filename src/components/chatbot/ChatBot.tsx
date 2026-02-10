@@ -139,8 +139,9 @@ export function ChatBot() {
     <>
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-[400px] max-w-[calc(100vw-2rem)] bg-gray-50 rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
-          style={{ height: 'min(600px, calc(100vh - 8rem))' }}
+        <div className="fixed z-50 bg-gray-50 shadow-2xl border border-gray-200 flex flex-col overflow-hidden
+          inset-0 rounded-none
+          sm:inset-auto sm:bottom-24 sm:right-6 sm:w-[400px] sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl sm:h-[min(600px,calc(100vh-8rem))]"
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-primary to-orange-400 text-white px-5 py-4 flex items-center justify-between shrink-0">
@@ -218,12 +219,12 @@ export function ChatBot() {
         </div>
       )}
 
-      {/* Floating Button */}
+      {/* Floating Button - hidden on mobile when chat is open */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 ${
           isOpen
-            ? 'bg-gray-600 hover:bg-gray-700'
+            ? 'hidden sm:flex bg-gray-600 hover:bg-gray-700'
             : 'bg-primary hover:bg-primary-dark'
         }`}
       >
