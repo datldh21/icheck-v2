@@ -22,7 +22,7 @@ interface RequestState {
     customEndTime?: string;
   }) => Promise<void>;
   approveRequest: (requestId: string, approverId: string, approverName: string) => Promise<void>;
-  rejectRequest: (requestId: string, approverId: string, approverName: string) => Promise<void>;
+  rejectRequest: (requestId: string, approverId: string, approverName: string, rejectReason?: string) => Promise<void>;
 }
 
 export const useRequestStore = create<RequestState>((set) => ({
@@ -62,8 +62,8 @@ export const useRequestStore = create<RequestState>((set) => ({
     set({ pendingRequests: pending, allRequests: all });
   },
 
-  rejectRequest: async (requestId, approverId, approverName) => {
-    await requestService.rejectRequest(requestId, approverId, approverName);
+  rejectRequest: async (requestId, approverId, approverName, rejectReason?) => {
+    await requestService.rejectRequest(requestId, approverId, approverName, rejectReason);
     const pending = await requestService.getPendingRequests();
     const all = await requestService.getAllRequests();
     set({ pendingRequests: pending, allRequests: all });

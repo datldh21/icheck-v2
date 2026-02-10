@@ -44,10 +44,10 @@ export const requestService = {
     return Promise.resolve(requests[idx]);
   },
 
-  async rejectRequest(requestId: string, approverId: string, approverName: string): Promise<LeaveRequest> {
+  async rejectRequest(requestId: string, approverId: string, approverName: string, rejectReason?: string): Promise<LeaveRequest> {
     const idx = requests.findIndex((r) => r.id === requestId);
     if (idx === -1) throw new Error('Request not found');
-    requests[idx] = { ...requests[idx], status: 'rejected', approverId, approverName };
+    requests[idx] = { ...requests[idx], status: 'rejected', approverId, approverName, rejectReason };
     return Promise.resolve(requests[idx]);
   },
 };

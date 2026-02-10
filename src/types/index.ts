@@ -57,6 +57,7 @@ export interface LeaveRequest {
   status: RequestStatus;
   approverId?: string;
   approverName?: string;
+  rejectReason?: string;
   createdAt: string;
   customStartTime?: string;
   customEndTime?: string;

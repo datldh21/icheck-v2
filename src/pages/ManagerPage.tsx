@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Users,
   UserCheck,
@@ -6,15 +6,25 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  Lightbulb,
+  Loader2,
+  Brain,
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell,
 } from 'recharts';
 import { useRequestStore, useAttendanceStore, useAuthStore } from '../stores';
-import { Avatar, Badge } from '../components/common';
+import { Avatar, Badge, Modal } from '../components/common';
 import { REQUEST_TYPE_LABELS } from '../types';
-import { formatDate } from '../utils';
+import { formatDate, formatMonthYear } from '../utils';
+import { aiAnalysisService, type MonthlyAnalysis, type AnalysisInsight } from '../services/aiAnalysisService';
 
 // Mock analytics data
 const punctualityData = [
@@ -41,23 +51,45 @@ export function ManagerPage() {
   const { pendingRequests, fetchPendingRequests, approveRequest, rejectRequest } = useRequestStore();
   const { todayRecords, fetchTodayAttendance } = useAttendanceStore();
 
+  // Reject modal state
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectingRequestId, setRejectingRequestId] = useState<string | null>(null);
+  const [rejectingRequestName, setRejectingRequestName] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [isRejecting, setIsRejecting] = useState(false);
+
   useEffect(() => {
     fetchPendingRequests();
     fetchTodayAttendance();
   }, [fetchPendingRequests, fetchTodayAttendance]);
 
   const presentCount = todayRecords.length;
-  const leaveCount = 2; // mock
-  const wfhCount = 1; // mock
+  const leaveCount = 2;
+  const wfhCount = 1;
 
   const handleApprove = async (requestId: string) => {
     if (!user) return;
     await approveRequest(requestId, user.id, user.name);
   };
 
-  const handleReject = async (requestId: string) => {
-    if (!user) return;
-    await rejectRequest(requestId, user.id, user.name);
+  const openRejectModal = (requestId: string, requestUserName: string) => {
+    setRejectingRequestId(requestId);
+    setRejectingRequestName(requestUserName);
+    setRejectReason('');
+    setRejectModalOpen(true);
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!user || !rejectingRequestId || !rejectReason.trim()) return;
+    setIsRejecting(true);
+    try {
+      await rejectRequest(rejectingRequestId, user.id, user.name, rejectReason.trim());
+      setRejectModalOpen(false);
+      setRejectingRequestId(null);
+      setRejectReason('');
+    } finally {
+      setIsRejecting(false);
+    }
   };
 
   return (
@@ -106,7 +138,7 @@ export function ManagerPage() {
                     Duyệt
                   </button>
                   <button
-                    onClick={() => handleReject(req.id)}
+                    onClick={() => openRejectModal(req.id, req.userName)}
                     className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors"
                   >
                     <XCircle size={14} />
@@ -118,6 +150,9 @@ export function ManagerPage() {
           )}
         </div>
       </div>
+
+      {/* ===== AI Monthly Analysis ===== */}
+      <AIAnalysisSection />
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -178,6 +213,320 @@ export function ManagerPage() {
           ))}
         </div>
       </div>
+
+      {/* ===== Reject Reason Modal ===== */}
+      <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)} title="Từ chối đề xuất">
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-100 rounded-lg p-3">
+            <p className="text-sm text-red-700">
+              Bạn đang từ chối đề xuất của <strong>{rejectingRequestName}</strong>.
+              Lý do từ chối sẽ được gửi thông báo tới nhân viên.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              <span className="text-red-500">*</span> Lý do từ chối
+            </label>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Nhập lý do từ chối đề xuất để thông báo cho nhân viên..."
+              rows={4}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-200 focus:border-red-400 outline-none transition-all resize-y"
+              autoFocus
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              onClick={() => setRejectModalOpen(false)}
+              className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={handleRejectConfirm}
+              disabled={isRejecting || !rejectReason.trim()}
+              className="px-5 py-2.5 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isRejecting ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : (
+                <>
+                  <XCircle size={14} />
+                  Xác nhận từ chối
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+// ===== AI Analysis Section Component =====
+function AIAnalysisSection() {
+  const [year, setYear] = useState(2026);
+  const [month, setMonth] = useState(2);
+  const [analysis, setAnalysis] = useState<MonthlyAnalysis | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  const loadAnalysis = async () => {
+    setIsLoading(true);
+    setHasLoaded(true);
+    try {
+      const result = await aiAnalysisService.getMonthlyAnalysis(year, month);
+      setAnalysis(result);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateNew = async () => {
+    setIsGenerating(true);
+    try {
+      const result = await aiAnalysisService.generateAnalysis(year, month);
+      setAnalysis(result);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const prevMonth = () => {
+    if (month === 1) { setMonth(12); setYear(year - 1); }
+    else setMonth(month - 1);
+    setHasLoaded(false);
+    setAnalysis(null);
+  };
+
+  const nextMonth = () => {
+    if (month === 12) { setMonth(1); setYear(year + 1); }
+    else setMonth(month + 1);
+    setHasLoaded(false);
+    setAnalysis(null);
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return 'text-green-500';
+    if (score >= 75) return 'text-blue-500';
+    if (score >= 60) return 'text-yellow-500';
+    if (score > 0) return 'text-red-500';
+    return 'text-gray-400';
+  };
+
+  const getScoreRingColor = (score: number) => {
+    if (score >= 90) return '#22c55e';
+    if (score >= 75) return '#3b82f6';
+    if (score >= 60) return '#f59e0b';
+    if (score > 0) return '#ef4444';
+    return '#d1d5db';
+  };
+
+  const getInsightIcon = (type: AnalysisInsight['type']) => {
+    switch (type) {
+      case 'positive': return <TrendingUp size={16} className="text-green-500" />;
+      case 'warning': return <AlertTriangle size={16} className="text-yellow-500" />;
+      case 'critical': return <TrendingDown size={16} className="text-red-500" />;
+      case 'suggestion': return <Lightbulb size={16} className="text-blue-500" />;
+    }
+  };
+
+  const getInsightBorder = (type: AnalysisInsight['type']) => {
+    switch (type) {
+      case 'positive': return 'border-l-green-400 bg-green-50/50';
+      case 'warning': return 'border-l-yellow-400 bg-yellow-50/50';
+      case 'critical': return 'border-l-red-400 bg-red-50/50';
+      case 'suggestion': return 'border-l-blue-400 bg-blue-50/50';
+    }
+  };
+
+  const getInsightLabel = (type: AnalysisInsight['type']) => {
+    switch (type) {
+      case 'positive': return 'Tích cực';
+      case 'warning': return 'Cảnh báo';
+      case 'critical': return 'Nghiêm trọng';
+      case 'suggestion': return 'Gợi ý';
+    }
+  };
+
+  // SVG circle params for score ring
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const scoreOffset = analysis ? circumference - (analysis.overallScore / 100) * circumference : circumference;
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Header */}
+      <div className="p-5 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white">
+            <Brain size={20} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Phân tích AI</h3>
+            <p className="text-xs text-gray-400">Phân tích dữ liệu ngày công & nghỉ phép theo tháng</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Month selector */}
+          <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-2 py-1">
+            <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-200 text-gray-500 transition-colors">
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-sm font-semibold text-gray-700 min-w-[110px] text-center">
+              {formatMonthYear(year, month)}
+            </span>
+            <button onClick={nextMonth} className="p-1 rounded hover:bg-gray-200 text-gray-500 transition-colors">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Analyze button */}
+          {!hasLoaded ? (
+            <button
+              onClick={loadAnalysis}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg text-sm font-semibold hover:from-violet-600 hover:to-purple-700 transition-all disabled:opacity-60 shadow-sm"
+            >
+              <Sparkles size={16} />
+              Phân tích
+            </button>
+          ) : (
+            <button
+              onClick={generateNew}
+              disabled={isGenerating || isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors disabled:opacity-60"
+            >
+              <Sparkles size={14} />
+              Tạo lại
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      {!hasLoaded && (
+        <div className="p-12 text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-violet-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Brain size={28} className="text-violet-500" />
+          </div>
+          <p className="text-gray-500 text-sm font-medium">Chọn tháng và nhấn "Phân tích" để AI phân tích dữ liệu</p>
+          <p className="text-gray-400 text-xs mt-1">Dựa trên dữ liệu chấm công, nghỉ phép và đề xuất của nhân viên</p>
+        </div>
+      )}
+
+      {(isLoading || isGenerating) && (
+        <div className="p-12 text-center">
+          <Loader2 size={36} className="animate-spin text-violet-500 mx-auto mb-4" />
+          <p className="text-gray-500 text-sm font-medium">
+            {isGenerating ? 'AI đang phân tích dữ liệu...' : 'Đang tải kết quả phân tích...'}
+          </p>
+          <p className="text-gray-400 text-xs mt-1">Vui lòng chờ trong giây lát</p>
+        </div>
+      )}
+
+      {hasLoaded && !isLoading && !isGenerating && !analysis && (
+        <div className="p-12 text-center">
+          <p className="text-gray-400 text-sm">Chưa có dữ liệu phân tích cho tháng {month}/{year}</p>
+          <button
+            onClick={generateNew}
+            className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-violet-50 text-violet-600 rounded-lg text-sm font-semibold hover:bg-violet-100 transition-colors"
+          >
+            <Sparkles size={14} />
+            Tạo phân tích mới
+          </button>
+        </div>
+      )}
+
+      {hasLoaded && !isLoading && !isGenerating && analysis && (
+        <div>
+          {/* Score + Summary */}
+          <div className="p-5 border-b border-gray-50 flex gap-6 items-start">
+            {/* Score Ring */}
+            {analysis.overallScore > 0 && (
+              <div className="shrink-0 flex flex-col items-center">
+                <div className="relative w-24 h-24">
+                  <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r={radius} fill="none" stroke="#f3f4f6" strokeWidth="8" />
+                    <circle
+                      cx="50" cy="50" r={radius} fill="none"
+                      stroke={getScoreRingColor(analysis.overallScore)}
+                      strokeWidth="8"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={scoreOffset}
+                      strokeLinecap="round"
+                      className="transition-all duration-1000"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className={`text-2xl font-bold ${getScoreColor(analysis.overallScore)}`}>
+                      {analysis.overallScore}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs font-semibold text-gray-500 mt-1">{analysis.scoreLabel}</p>
+              </div>
+            )}
+
+            {/* Summary text */}
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-bold text-gray-800 mb-2">
+                Tổng quan tháng {month}/{year}
+              </h4>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {analysis.summary}
+              </p>
+              <p className="text-xs text-gray-300 mt-3">
+                Phân tích lúc {new Date(analysis.generatedAt).toLocaleString('vi-VN')}
+              </p>
+            </div>
+          </div>
+
+          {/* Insights */}
+          {analysis.insights.length > 0 && (
+            <div className="p-5">
+              <h4 className="text-sm font-bold text-gray-800 mb-3">
+                Chi tiết phân tích ({analysis.insights.length} mục)
+              </h4>
+              <div className="space-y-3">
+                {analysis.insights.map((insight) => (
+                  <div
+                    key={insight.id}
+                    className={`border-l-4 rounded-lg p-4 ${getInsightBorder(insight.type)}`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          {getInsightIcon(insight.type)}
+                          <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+                            {getInsightLabel(insight.type)}
+                          </span>
+                        </div>
+                        <h5 className="text-sm font-bold text-gray-800 mb-1">{insight.title}</h5>
+                        <p className="text-xs text-gray-600 leading-relaxed">{insight.detail}</p>
+                      </div>
+                      {insight.metric && (
+                        <div className="text-right shrink-0">
+                          <p className="text-lg font-bold text-gray-800">{insight.metric}</p>
+                          <p className="text-[10px] text-gray-400">{insight.metricLabel}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { ScrollToTop } from '../common';
+import { ChatBot } from '../chatbot';
 import { useAuthStore } from '../../stores';
 
 export function MainLayout() {
@@ -49,6 +50,7 @@ export function MainLayout() {
       </main>
 
       <ScrollToTop />
+      <ChatBot />
     </div>
   );
 }
